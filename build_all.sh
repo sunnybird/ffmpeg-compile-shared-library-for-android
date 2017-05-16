@@ -2,13 +2,12 @@
 export ANDROID_NDK=$NDK_ROOT
 # 需要编译cup架构类型，加入下面的()中，用空格分割
 export SUPPORTED_ARCHITECTURES=(armeabi armeabi-v7a armeabi-v7a-neon x86 x86_64)
-#export SUPPORTED_ARCHITECTURES=(armeabi)
 #编译结果的目录
 export PREFIXDIR=android-lib 
 # NDK 编译工具版本，参考 ANDROID_NDK/toolchains/ 目录下面文件夹末尾数字
 export NDK_TOOLCHAIN_ABI_VERSION=4.9
 # 需要支持的 Android 版本 ， 参考 ANDROID_NDK/platforms/ 目录下面的文件夹名称
-export ANDROID_API_VERSION=21
+export ANDROID_API_VERSION=23
 
 ## 配置编译环境并且编译
 function configAndMake(){
@@ -16,9 +15,12 @@ case ${ARCH} in
   armeabi-v7a | armeabi-v7a-neon | armeabi)
     CPU='cortex-a8'
   ;;
-  x86 | x86_64)
+  x86)
     CPU='i686'
   ;;
+  x86_64)
+    CPU="x86-64"
+   ;;
 esac
 
 PREFIX="${PREFIXDIR}/${ARCH}"
@@ -59,6 +61,7 @@ case $ARCH in
     NDK_TOOLCHAIN_ABI='arm-linux-androideabi'
     NDK_CROSS_PREFIX="arm-linux-androideabi"
   ;;
+
   armeabi-v7a)
     NDK_ABI='arm'
     NDK_TOOLCHAIN_ABI='arm-linux-androideabi'
@@ -66,6 +69,7 @@ case $ARCH in
     CFLAGS="${CFLAGS} -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16"
     LDFLAGS="${LDFLAGS} -march=armv7-a -Wl,--fix-cortex-a8"
   ;;
+
   armeabi-v7a-neon)
     NDK_ABI='arm'
     NDK_TOOLCHAIN_ABI='arm-linux-androideabi'
@@ -73,17 +77,21 @@ case $ARCH in
     CFLAGS="${CFLAGS} -march=armv7-a -mfloat-abi=softfp -mfpu=neon"
     LDFLAGS="${LDFLAGS} -march=armv7-a -Wl,--fix-cortex-a8"
   ;;
+
   x86)
     NDK_ABI='x86'
     NDK_TOOLCHAIN_ABI='x86-linux-android'
     NDK_CROSS_PREFIX="i686-linux-android"
     CFLAGS="$CFLAGS -march=i686"
   ;;
+
    x86_64)
     NDK_ABI='x86_64'
     NDK_TOOLCHAIN_ABI='x86_64-linux-android'
     NDK_CROSS_PREFIX="x86_64-linux-android"
-    CFLAGS="$CFLAGS -march=i686"
+    CFLAGS="$CFLAGS -march=x86-64 -m64"
+   ;;
+
 esac
 
 CROSS_PREFIX=${TOOLCHAIN}/bin/${NDK_CROSS_PREFIX}-
@@ -92,12 +100,11 @@ export PKG_CONFIG_LIBDIR="${TOOLCHAIN}/lib/pkgconfig"
 
 $ANDROID_NDK/build/tools/make-standalone-toolchain.sh \
    --arch=$NDK_ABI \
-   --toolchain=${NDK_TOOLCHAIN_ABI}-${NDK_TOOLCHAIN_ABI_VERSION} \
    --platform=android-${ANDROID_API_VERSION} \
    --install-dir=$TOOLCHAIN \
    --force
-
-  export CC="${CROSS_PREFIX}gcc --sysroot=${NDK_SYSROOT}"
+   
+  export CC="${CROSS_PREFIX}gcc"
   export LD="${CROSS_PREFIX}ld"
   export RANLIB="${CROSS_PREFIX}ranlib"
   export STRIP="${CROSS_PREFIX}strip"
